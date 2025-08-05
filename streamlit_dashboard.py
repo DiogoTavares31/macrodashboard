@@ -1,7 +1,9 @@
-from newsfetch import *
-from macrofetch import *
-from financefetch import *
-from summarizermodel import *
+import newsfetch
+import macrofetch
+import financefetch
+import summarizermodel
+import streamlit as st
+import matplotlib.pyplot as plt
 
 # Streamlit app layout
 st.set_page_config(page_title="Macro News and Data App", layout="wide")
@@ -12,17 +14,17 @@ def main():
     # ----- Sidebar: Macroeconomic Data -----
     # st.sidebar.header("📈 Key Macroeconomic Indicators")
 
-    interest_rate = get_interest_rate()
-    inflation_rate = get_inflation_rate()
-    unemployment_rate = get_unemployment_rate()
-    gdp_growth_rate = get_gdp_growth_rate()
-    fgi_value, fgi_description = get_fear_and_greed_index()
+    interest_rate = macrofetch.get_interest_rate()
+    inflation_rate = macrofetch.get_inflation_rate()
+    unemployment_rate = macrofetch.get_unemployment_rate()
+    gdp_growth_rate = macrofetch.get_gdp_growth_rate()
+    fgi_value, fgi_description = financefetch.get_fear_and_greed_index()
 
     with st.sidebar:
 
         with st.container():
             
-            display_fear_and_greed_gauge(int(fgi_value), fgi_description)
+            financefetch.display_fear_and_greed_gauge(int(fgi_value), fgi_description)
 
         st.divider()
 
@@ -60,7 +62,7 @@ def main():
     
     #st.title("📊 Market Snapshot (Last 3 Months)")
 
-    market_data = fetch_market_data()
+    market_data = financefetch.fetch_market_data()
 
     cols = st.columns(2)
     for i, (label, series) in enumerate(market_data.items()):
@@ -78,7 +80,7 @@ def main():
 
     if any("Summarize Article" in k for k in st.session_state.keys()):
         with st.spinner("Loading summarizer..."):
-            summarizer = initialize_summarizer()
+            summarizer = summarizermodel.initialize_summarizer()
     else:
         summarizer = None
 
@@ -99,7 +101,7 @@ def main():
 
     feed_url = RSS_FEEDS[news_source]
 
-    articles = fetch_and_filter_rss(feed_url, MACRO_KEYWORDS)
+    articles = newsfetch.fetch_and_filter_rss(feed_url, newsfetch.MACRO_KEYWORDS)
 
     if articles:
         for idx, article in enumerate(articles):
@@ -110,11 +112,11 @@ def main():
             if st.button(f"Summarize Article", key=f"summary_{idx}"):
                 if summarizer is None:
                     with st.spinner("Loading summarizer..."):
-                        summarizer = initialize_summarizer()
-                full_text = get_full_article(article['link'])
+                        summarizer = summarizermodel.initialize_summarizer()
+                full_text = newsfetch.get_full_article(article['link'])
                 if full_text:
                     st.write("**Summary:**")
-                    st.write(summarize_article(summarizer, full_text))
+                    st.write(summarizermodel.summarize_article(summarizer, full_text))
                 else:
                     st.error("Failed to fetch the full article content.")
     else:
